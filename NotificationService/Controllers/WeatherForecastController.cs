@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace Contracts.Controllers
+namespace NotificationService.Controllers
 {
     [ApiController]
     [Route("[controller]")]
