@@ -1,25 +1,31 @@
-var builder = WebApplication.CreateBuilder(args);
+using MassTransit;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Contracts;
+using NotificationService.Consumers;
 
-// Add services to the container.
+var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+builder.Services.AddMassTransit(x =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    x.AddConsumer<OrderCreatedConsumer>();
 
-app.UseHttpsRedirection();
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("localhost", "/", h =>
+        {
+            h.Username("guest");
+            h.Password("guest");
+        });
 
-app.UseAuthorization();
+        cfg.ReceiveEndpoint("notification-service", e =>
+        {
+            e.ConfigureConsumer<OrderCreatedConsumer>(context);
+        });
+    });
+});
 
-app.MapControllers();
+builder.Services.AddMassTransitHostedService();
 
-app.Run();
+var host = builder.Build();
+host.Run();
